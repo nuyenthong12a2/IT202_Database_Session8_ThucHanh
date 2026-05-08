@@ -1,129 +1,103 @@
-CREATE DATABASE CompanyDB;
-USE CompanyDB;
+-- I. THIẾT KẾ CƠ SỞ DỮ LIỆU (DDL)
+CREATE DATABASE BookStoreDB;
+USE BookStoreDB;
 
--- 1. Bảng Department (Phòng ban)
-CREATE TABLE Department (
-    dept_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    dept_name VARCHAR(100) NOT NULL,
-    location VARCHAR(100)
+CREATE TABLE Category (
+    category_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    category_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255)
 );
 
--- 2. Bảng Employee (Nhân viên)
-CREATE TABLE Employee (
-    emp_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    emp_name VARCHAR(100) NOT NULL,
-    gender INT DEFAULT 1,
-    birth_date DATE,
-    salary DECIMAL(10, 2),
-    dept_id INT,
-    FOREIGN KEY (dept_id) REFERENCES Department(dept_id) ON UPDATE CASCADE
+CREATE TABLE Book (
+    book_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    status INT DEFAULT 1,
+    publish_date DATE,
+    price DECIMAL(15, 2),
+    category_id INT,
+    FOREIGN KEY (category_id) REFERENCES Category(category_id)
 );
 
--- 3. Bảng Project (Dự án)
-CREATE TABLE Project (
-    project_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    project_name VARCHAR(150) NOT NULL,
-    emp_id INT,
-    start_date DATE DEFAULT (CURRENT_DATE),
-    end_date DATE,
-    FOREIGN KEY (emp_id) REFERENCES Employee(emp_id)
+CREATE TABLE BookOrder (
+    order_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    book_id INT,
+    order_date DATE DEFAULT (CURRENT_DATE),
+    delivery_date DATE,
+    FOREIGN KEY (book_id) REFERENCES Book(book_id) ON DELETE CASCADE
 );
--- Thêm cột email (VARCHAR(100), UNIQUE) vào bảng Employee
-ALTER TABLE Employee
-ADD email VARCHAR(100) UNIQUE;
 
--- Sửa kiểu dữ liệu cột project_name thành VARCHAR(200)
-ALTER TABLE Project
-MODIFY project_name VARCHAR(200);
+-- II. THAY ĐỔI CẤU TRÚC BẢNG (DDL)
+ALTER TABLE Book ADD COLUMN author_name VARCHAR(100) NOT NULL;
+ALTER TABLE BookOrder MODIFY COLUMN customer_name VARCHAR(200);
+ALTER TABLE BookOrder ADD CONSTRAINT chk_delivery_date CHECK (delivery_date >= order_date);
 
--- Thêm ràng buộc CHECK đảm bảo end_date >= start_date
-ALTER TABLE Project
-ADD CONSTRAINT chk_date_valid CHECK (end_date >= start_date);
--- Thêm dữ liệu vào bảng Department
-INSERT INTO Department (dept_id, dept_name, location) VALUES
-(1, 'IT', 'Ha Noi'),
-(2, 'HR', 'HCM'),
-(3, 'Marketing', 'Da Nang');
+-- III. THAO TÁC DỮ LIỆU (DML)
+INSERT INTO Category (category_id, category_name, description) VALUES
+(1, 'IT & Tech', 'Sách lập trình'),
+(2, 'Business', 'Sách kinh doanh'),
+(3, 'Novel', 'Tiểu thuyết');
+select * from Category ;
 
--- Thêm dữ liệu vào bảng Employee
-INSERT INTO Employee (emp_id, emp_name, gender, birth_date, salary, dept_id, email) VALUES
-(1, 'Nguyen Van A', 1, '1990-01-15', 1500, 1, 'a@gmail.com'),
-(2, 'Tran Thi B', 0, '1995-05-20', 1200, 1, 'b@gmail.com'),
-(3, 'Le Minh C', 1, '1988-10-10', 2000, 2, 'c@gmail.com'),
-(4, 'Pham Thi D', 0, '1992-12-05', 1800, 3, 'd@gmail.com');
+INSERT INTO Book (book_id, title, status, publish_date, price, category_id, author_name) VALUES
+(1, 'Clean Code', 1, '2020-05-10', 500000, 1, 'Robert C. Martin'),
+(2, 'Đắc Nhân Tâm', 0, '2018-08-20', 150000, 2, 'Dale Carnegie'),
+(3, 'JavaScript Nâng cao', 1, '2023-01-15', 350000, 1, 'Kyle Simpson'),
+(4, 'Nhà Giả Kim', 0, '2015-11-25', 120000, 3, 'Paulo Coelho');
 
--- Thêm dữ liệu vào bảng Project
-INSERT INTO Project (project_id, project_name, emp_id, start_date, end_date) VALUES
-(101, 'Website Redesign', 1, '2024-01-01', '2024-06-01'),
-(102, 'Recruitment System', 3, '2024-02-01', '2024-08-01'),
-(103, 'Marketing Campaign', 4, '2024-03-01', NULL);
+select * from Book;
 
--- Tăng salary thêm 200 cho tất cả nhân viên thuộc phòng ban 'IT' (dept_id = 1)
-UPDATE Employee
-SET salary = salary + 200
-WHERE dept_id = 1;
 
--- Cập nhật end_date thành '2024-12-31' cho các dự án đang có giá trị NULL
-UPDATE Project
-SET end_date = '2024-12-31'
-WHERE end_date IS NULL;
--- Xóa các dự án có ngày bắt đầu trước ngày '2024-02-01'
-DELETE FROM Project
-WHERE start_date < '2024-02-01';
--- 1. CASE & AS: Hiển thị emp_name, email và cột gender_name
-SELECT 
-    emp_name, 
-    email, 
-    CASE 
-        WHEN gender = 1 THEN 'Nam' 
-        ELSE 'Nữ' 
-    END AS gender_name
-FROM Employee;
+INSERT INTO BookOrder (order_id, customer_name, book_id, order_date, delivery_date) VALUES
+(101, 'Nguyen Hai Nam', 1, '2025-01-10', '2025-01-15'),
+(102, 'Tran Bao Ngoc', 3, '2025-02-05', '2025-02-10'),
+(103, 'Le Hoang Yen', 4, '2025-03-12', NULL);
 
--- 2. Hàm hệ thống: emp_name viết hoa toàn bộ và một cột tính tuổi hiện tại
-SELECT 
-    UPPER(emp_name) AS emp_name_uppercase,
-    TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age
-FROM Employee;
+select * from BookOrder;
 
--- 3. INNER JOIN: Hiển thị emp_name, salary và dept_name
-SELECT 
-    e.emp_name, 
-    e.salary, 
-    d.dept_name
-FROM Employee e
-INNER JOIN Department d ON e.dept_id = d.dept_id;
+UPDATE Book SET price = price + 50000 WHERE category_id = 1;
+UPDATE BookOrder SET delivery_date = '2025-12-31' WHERE delivery_date IS NULL;
+DELETE FROM BookOrder WHERE order_date < '2025-02-01';
 
--- 4. ORDER BY & LIMIT: 2 nhân viên có mức lương cao nhất, sắp xếp giảm dần
-SELECT * 
-FROM Employee
-ORDER BY salary DESC
+
+-- 1. CASE & AS: Hiển thị trạng thái hàng hóa
+SELECT title, author_name, 
+       CASE 
+           WHEN status = 1 THEN 'Còn hàng' 
+           ELSE 'Hết hàng' 
+       END AS status_name 
+FROM Book;
+
+-- 2. Hàm hệ thống: In hoa tiêu đề và tính số năm xuất bản
+SELECT UPPER(title) AS title_uppercase, 
+       (YEAR(CURDATE()) - YEAR(publish_date)) AS years_published 
+FROM Book;
+
+-- 3. INNER JOIN: Kết hợp bảng Book và Category
+SELECT b.title, b.price, c.category_name 
+FROM Book b 
+INNER JOIN Category c ON b.category_id = c.category_id;
+
+-- 4. ORDER BY & LIMIT: Top 2 cuốn sách giá cao nhất
+SELECT * FROM Book 
+ORDER BY price DESC 
 LIMIT 2;
 
--- 5. GROUP BY & HAVING: Số lượng nhân viên theo phòng ban (>= 2 nhân viên)
-SELECT 
-    d.dept_name, 
-    COUNT(e.emp_id) AS total_employees
-FROM Department d
-JOIN Employee e ON d.dept_id = e.dept_id
-GROUP BY d.dept_id, d.dept_name
-HAVING COUNT(e.emp_id) >= 2;
+-- 5. GROUP BY & HAVING: Thống kê thể loại có từ 2 cuốn sách trở lên
+SELECT c.category_name, COUNT(b.book_id) AS book_count 
+FROM Category c 
+JOIN Book b ON c.category_id = b.category_id 
+GROUP BY c.category_name 
+HAVING book_count >= 2;
 
--- 6. Scalar Subquery: Nhân viên có mức lương cao hơn mức lương trung bình
-SELECT * 
-FROM Employee
-WHERE salary > (SELECT AVG(salary) FROM Employee);
+-- 6. Scalar Subquery: Sách có giá cao hơn mức trung bình
+SELECT * FROM Book 
+WHERE price > (SELECT AVG(price) FROM Book);
 
--- 7. IN Operator Subquery: Các nhân viên đang tham gia ít nhất một dự án
-SELECT * 
-FROM Employee
-WHERE emp_id IN (SELECT DISTINCT emp_id FROM Project WHERE emp_id IS NOT NULL);
+-- 7. IN Operator Subquery: Sách đã từng được đặt hàng
+SELECT * FROM Book 
+WHERE book_id IN (SELECT DISTINCT book_id FROM BookOrder);
 
--- 8. Correlated Subquery: Nhân viên có mức lương cao nhất trong phòng ban của họ
-SELECT e1.* 
-FROM Employee e1
-WHERE e1.salary = (
-    SELECT MAX(e2.salary) 
-    FROM Employee e2 
-    WHERE e2.dept_id = e1.dept_id
-);
+-- 8. Correlated Subquery: Sách đắt nhất trong từng thể loại
+SELECT * FROM Book b1 
+WHERE price = (SELECT MAX(price) FROM Book b2 WHERE b2.category_id = b1.category_id);
